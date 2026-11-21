@@ -1,6 +1,4 @@
 #!/bin/sh
-. {{ prefix }}/etc/funcs
-
 case "${1}" in
     pass)
         openssl rand -base64 12; exit 0
@@ -16,14 +14,14 @@ case "${1}" in
         outext=".OSSLenc"
     ;;
     *)
-        aprint_usage "{pass}{enc|dec}"
+        echo "[INFO] usage: {pass}{enc|dec}"
         exit 1
     ;;
 esac
 
 if [ -z "${2}" ]
     then
-        aprint_fail "set an input file in \$2, exiting."
+        echo "[ERROR] set an input file in \$2, exiting."
         exit 1
     else
         infile="${2}"
@@ -39,17 +37,17 @@ if [ -z "${2}" ]
                 esac
 
                 if [ "${action}" = "dec" ] && [ "${fcheck}" = "no" ]; then
-                    aprint_fail "can't decrypt what's not encrypted."
+                    echo "[ERROR] can't decrypt what's not encrypted."
                     exit 1
                 elif [ "${action}" = "enc" ] && [ "${fcheck}" = "yes" ]; then
-                    aprint_fail "already encrypted."
+                    echo "[ERROR] already encrypted."
                     exit 1
                 fi
 
                 outfile="$(echo ${infile} \
                     | sed "s/\.OSSLdec//;s/\.OSSLenc//")${outext}"
 
-                aprint "${action}rypting ${infile}."
+                echo "[INFO] ${action}rypting ${infile}."
                 openssl ${params} \
                     -aes-256-cbc \
                     -md sha512 \
@@ -59,7 +57,7 @@ if [ -z "${2}" ]
                     -in "${infile}" \
                     -out "${outfile}"
             else
-                aprint_fail "set an input file in \$2, exiting."
+                echo "[ERROR] set an input file in \$2, exiting."
                 exit 1
         fi
 fi
