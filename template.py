@@ -65,23 +65,6 @@ class OTGFormatter(logging.Formatter):
 
 # - - meaty bits - - #
 class TemplateOTG:
-    _PLATFORM_BLACKLIST = {
-        "Darwin": [
-            "bin/fetch.py",
-            "bin/setcake.py",
-            "bin/setgov",
-            "bin/suspendtodisk",
-            "bin/ttygrab",
-        ]
-    }
-
-    _WAYLAND_SPECIFIC = {
-        "bin/chromium",
-        "bin/grimclip",
-        "bin/grimcrop",
-        "bin/grimscrot",
-    }
-
     def __init__(self):
         self.logger = None
         self.context = None
@@ -114,10 +97,7 @@ class TemplateOTG:
         # fmt: off
         msg  = f'platform      : {self.context["platform"]}\n'
         msg += f'install prefix: {self.context["prefix"]}\n'
-        msg += f'home directory: {self.context["home"]}\n'
         msg += f'stuff prefix  : {self.context["stuff_prefix"]}\n'
-        if self.context["platform"] == "Linux":
-            msg += f'wayland       : {self.context["wayland"]}\n'
         # fmt: on
 
         for line in msg.split("\n"):
@@ -129,10 +109,8 @@ class TemplateOTG:
             self.logger.error("%s is not a supported platform", current_platform)
 
         if current_platform == "Darwin":
-            default_home = "/Users/jackass"
             default_stuff_prefix = "/Users/jackass/stuff"
         else:
-            default_home = "/home/mss"
             default_stuff_prefix = "/mnt/mss/stuff"
 
         parser = argparse.ArgumentParser(description="OTG templater")
@@ -142,20 +120,6 @@ class TemplateOTG:
             help="installation prefix",
             default="/opt/otg",
         )
-        parser.add_argument(
-            "--home",
-            type=str,
-            help="$HOME of the user",
-            default=default_home,
-        )
-
-        if current_platform != "Darwin":
-            parser.add_argument(
-                "--wayland",
-                action="store_true",
-                help="enable wayland specific functionality",
-                default=False,
-            )
 
         parser.add_argument(
             "--stuff-prefix",
@@ -166,20 +130,14 @@ class TemplateOTG:
 
         args = parser.parse_args()
 
-        wayland_enabled = (
-            getattr(args, "wayland", False) if current_platform != "Darwin" else False
-        )
-
         self.context = {
             "prefix": args.prefix,
-            "home": args.home,
-            "wayland": wayland_enabled,
             "platform": current_platform,
             "stuff_prefix": args.stuff_prefix,
         }
 
     def _mkdir(self):
-        for directory in ["bin", "etc", "share"]:
+        for directory in ["bin", "share"]:
             path = os.path.join(self.context["prefix"], directory)
 
             self.logger.info("mkdir    %s", path)
@@ -202,17 +160,6 @@ class TemplateOTG:
     def _render(self):
         template_loader = jinja2.FileSystemLoader("./utils")
         template_list = template_loader.list_templates()
-
-        # clean platform blacklisted paths, if they exist
-        if self.context["platform"] in self._PLATFORM_BLACKLIST:
-            if self._PLATFORM_BLACKLIST[self.context["platform"]]:
-                for path in self._PLATFORM_BLACKLIST[self.context["platform"]]:
-                    template_list.remove(path)
-
-        # clean wayland specific paths
-        if not self.context["wayland"]:
-            for path in self._WAYLAND_SPECIFIC:
-                template_list.remove(path)
 
         # create env
         template_env = jinja2.Environment(
