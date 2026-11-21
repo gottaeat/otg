@@ -68,7 +68,58 @@ fi
 
 unset append_path
 
-# - - otg - - #
-. {{ prefix }}/etc/sourceme
-. {{ prefix }}/etc/sourceme-aliases
-. {{ prefix }}/etc/sourceme-build
+# - - essential - - #
+export LANG="en_US.UTF-8"
+export PAGER="less"
+export EDITOR="vim"
+export GPG_TTY="$(tty)"
+
+{% if platform == "Darwin" %}
+# - - brew - - #
+eval "$(/opt/homebrew/bin/brew shellenv)"
+
+for bindir in "/opt/homebrew/opt/"*"/libexec/gnubin"; do
+    export PATH="${bindir}:${PATH}"
+done
+
+for mandir in "/opt/homebrew/opt/"*"/libexec/gnuman"; do
+    export MANPATH="${mandir}:${MANPATH}"
+done
+{% endif %}
+
+# - - tooling - - #
+MAKEFLAGS="${MAKEFLAGS} -j$(nproc)"
+CPPFLAGS="-DNDEBUG -D_FORTIFY_SOURCE=2"
+CFLAGS="${CPPFLAGS} -g0 -s -w -pipe -O3"
+CFLAGS="${CFLAGS} -fcommon -fstack-protector-strong"
+CXXFLAGS="${CFLAGS}"
+{% if platform == "Linux" %}
+export LDFLAGS="${CFLAGS} -Wl,--as-needed,--sort-common,-z,relro,-z,now,--gc-sections,-O3"
+{% endif %}
+export MAKEFLAGS CPPFLAGS CFLAGS CXXFLAGS
+
+# - - aliases - - #
+_LS_PATH="$(which ls)"
+alias l="${_LS_PATH} -AFHhp --color=auto --group-directories-first"
+alias ll="${_LS_PATH} -AFHhp --color=auto --group-directories-first -w1"
+alias lll="${_LS_PATH} -AFHhp --color=auto --group-directories-first -l"
+alias ls="${_LS_PATH} -AFHhp --color=auto --group-directories-first"
+alias grep="grep --color=auto"
+alias cdg="cd {{ stuff_prefix }}/techy-bits/git"
+alias cdl="cd {{ stuff_prefix }}/media/lewd"
+alias cds="cd {{ stuff_prefix }}"
+alias cdw="cd {{ stuff_prefix }}/techy-bits/work"
+alias cdt1="cd {{ stuff_prefix }}/techy-bits/work/table"
+alias cdt2="cd {{ stuff_prefix }}/techy-bits/work/table2"
+alias cdt3="cd {{ stuff_prefix }}/techy-bits/work/table3"
+alias cdt4="cd {{ stuff_prefix }}/techy-bits/work/table4"
+alias cdt5="cd {{ stuff_prefix }}/techy-bits/work/table5"
+alias tmux="tmux -2"
+alias gs="git status -s"
+alias gcd1="git clone --depth=1 --recursive --shallow-submodules"
+alias cp="cp -v"
+alias ln="ln -v"
+alias mv="mv -v"
+alias mkdir="mkdir -pv"
+alias mount="mount -v"
+unset _LS_PATH
